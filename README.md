@@ -3,7 +3,7 @@
 Agile Protocol
 =================
 
-The Agile Protocol is an Binance Smart Chain smart contract for supplying or borrowing assets. Through the aToken contracts, accounts on the blockchain *supply* capital (BNB or BEP-20 tokens) to receive aTokens or *borrow* assets from the protocol (holding other assets as collateral). The Agile aToken contracts track these balances and algorithmically set interest rates for borrowers.
+The Agile Protocol is an Cronos smart contract for supplying or borrowing assets. Through the aToken contracts, accounts on the blockchain *supply* capital (CRO or BEP-20 tokens) to receive aTokens or *borrow* assets from the protocol (holding other assets as collateral). The Agile aToken contracts track these balances and algorithmically set interest rates for borrowers.
 
 Before getting started with this repo, please read:
 
@@ -14,7 +14,7 @@ We detail a few of the core contracts in the Agile protocol.
 
 <dl>
   <dt>AToken, ABep20 and ABNB</dt>
-  <dd>The Agile aTokens, which are self-contained borrowing and lending contracts. AToken contains the core logic and ABep20, ABUSD and ABNB add public interfaces for Bep20 tokens and bnb, respectively. Each AToken is assigned an interest rate and risk model (see InterestRateModel and Comptroller sections), and allows accounts to *mint* (supply capital), *redeem* (withdraw capital), *borrow* and *repay a borrow*. Each AToken is an BEP-20 compliant token where balances represent ownership of the market.</dd>
+  <dd>The Agile aTokens, which are self-contained borrowing and lending contracts. AToken contains the core logic and ABep20, ABUSD and ABNB add public interfaces for Bep20 tokens and CRO, respectively. Each AToken is assigned an interest rate and risk model (see InterestRateModel and Comptroller sections), and allows accounts to *mint* (supply capital), *redeem* (withdraw capital), *borrow* and *repay a borrow*. Each AToken is an BEP-20 compliant token where balances represent ownership of the market.</dd>
 </dl>
 
 <dl>
