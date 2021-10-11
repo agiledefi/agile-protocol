@@ -1,0 +1,222 @@
+-- NewComptroller, but with markets listed so that we can make them agile markets in constructor
+Macro FlywheelComptroller price=1.0 borrowRate=0.000005 agileInitAmount=5000000e18
+    Unitroller Deploy
+    PriceOracle Deploy Fixed price
+    PriceOracleProxy Deploy Admin (PriceOracle Address) (Address Zero) (Address Zero) (Address Zero) (Address Zero) (Address Zero)
+    --g1
+    ComptrollerImpl Deploy ScenarioG1 ComptrollerScenG1
+    Unitroller SetPendingImpl ComptrollerScenG1
+    ComptrollerImpl ComptrollerScenG1 BecomeG1
+    --list some tokens
+    Comptroller SetPriceOracle (PriceOracleProxy Address)
+    Comptroller SetMaxAssets 20
+    Comptroller SetCloseFactor 0.5
+    Comptroller LiquidationIncentive 1.1
+    Comptroller SetAgileRate 1e18
+    NewAToken ZRX aZRX
+    NewAToken BAT aBAT
+    Support aZRX collateralFactor:0.5
+    Support aBAT collateralFactor:0.5
+    Comptroller AddAgileMarkets (aZRX aBAT)
+    Bep20 Deploy Standard AGL "AGL Token" 18
+    Give (Address Comptroller) agileInitAmount AGL
+    Comptroller Send "setAGLAddress(address)" (Address AGL)
+    Bep20 Deploy Standard XAI "XAI Token" 18
+    Give (Address Comptroller) agileInitAmount XAI
+    Comptroller Send "setXAIAddress(address)" (Address XAI)
+
+Macro InitSpeeds
+    Prep Geoff 100e18 ZRX aZRX
+    Mint Geoff 50e18 aZRX--tokenbalance = 50e18 / 2e9 = 2.5e10
+    Prep Coburn Some BAT aBAT
+    Mint Coburn 6e18 aBAT--tokenbalance = 6e18 / 2e9 = 3e9
+    EnterMarkets Coburn aBAT
+    Borrow Coburn 1e18 aZRX
+    Comptroller RefreshAgileSpeeds
+
+Test "Accrue AGL during a mint"
+    FlywheelComptroller
+    InitSpeeds
+    FastForward 300000 Blocks
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Mint Geoff 1e18 aZRX
+    -- new index = initVal + deltaBlocks * supplySpeed * 1e36 / totalSupply
+    -- new index = 1e36 + 300000 * 1e18 * 1e36 / 2.5e10 = 1.2000000000001e49
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Comptroller AgileSupplyState aZRX "index") 1.2000000000001e49
+    Assert Equal (Comptroller AgileSupplyState aZRX "block") 300000
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 300000e18
+    Assert Equal (Comptroller AgileSupplierIndex aZRX Geoff) 1.2000000000001e49
+
+Test "Accrue AGL during a borrow"
+    FlywheelComptroller
+    InitSpeeds
+    Comptroller FastForward 300000 Blocks
+    Assert Equal (Comptroller AgileAccrued Coburn) 0
+    Borrow Coburn 0.1e18 aZRX
+    -- new index = initVal + deltaBlocks * borrowSpeed * 1e36 / totalBorrows
+    -- new index = 1e36 + 300000 * 1e18 * 1e36 / 1e18 =  3.00001e41
+    Assert Equal (Comptroller AgileAccrued Coburn) 0
+    Assert Equal (Comptroller AgileBorrowState aZRX "index") 3.00001e41
+    Assert Equal (Comptroller AgileBorrowState aZRX "block") 300000
+    Assert Equal (Bep20 AGL TokenBalance Coburn) 300000e18
+    Assert Equal (Comptroller AgileBorrowerIndex aZRX Coburn) 3.00001e41
+
+Skip "Accrue AGL during a redeem"
+    FlywheelComptroller
+    InitSpeeds
+    FastForward 300000 Blocks
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Redeem Geoff 1e9 aZRX
+    -- new index = initVal + deltaBlocks * supplySpeed * 1e36 / totalSupply
+    -- new index = 1e36 + 300000 * 1e18 * 1e36 / 2.5e10 = 1.2000000000001e49
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Comptroller AgileSupplyState aZRX "index") 1.2000000000001e49
+    Assert Equal (Comptroller AgileSupplyState aZRX "block") 300000
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 300000e18
+    Assert Equal (Comptroller AgileSupplierIndex aZRX Geoff) 1.2000000000001e49
+
+Test "Accrue AGL during a repayBorrow"
+    FlywheelComptroller
+    InitSpeeds
+    FastForward 300000 Blocks
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Prep Coburn 0.5e18 ZRX aZRX
+    RepayBorrow Coburn 0.5e18 aZRX
+    -- new index = initVal + deltaBlocks * borrowSpeed * 1e36 / totalBorrows
+    -- new index = 1e36 + 300000 * 1e18 * 1e36 / 1e18 =  3.00001e41
+    Assert Equal (Comptroller AgileAccrued Coburn) 0
+    Assert Equal (Comptroller AgileBorrowState aZRX "index") 3.00001e41
+    Assert Equal (Comptroller AgileBorrowState aZRX "block") 300000
+    Assert Equal (Bep20 AGL TokenBalance Coburn) 300000e18
+    Assert Equal (Comptroller AgileBorrowerIndex aZRX Coburn) 3.00001e41
+
+Test "Accrue AGL during a repayBorrowBehalf of 0"
+    FlywheelComptroller
+    InitSpeeds
+    FastForward 300000 Blocks
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    -- confirm we can init all flywheel accounts for free
+    RepayBorrowBehalf Jared Coburn 0 aZRX
+    -- new index = initVal + deltaBlocks * borrowSpeed * 1e36 / totalBorrows
+    -- new index = 1e36 + 300000 * 1e18 * 1e36 / 1e18 = 3.00001e41
+    Assert Equal (Comptroller AgileAccrued Coburn) 0
+    Assert Equal (Comptroller AgileBorrowState aZRX "index") 3.00001e41
+    Assert Equal (Comptroller AgileBorrowState aZRX "block") 300000
+    Assert Equal (Bep20 AGL TokenBalance Coburn) 300000e18
+    Assert Equal (Comptroller AgileBorrowerIndex aZRX Coburn) 3.00001e41
+
+Test "Accrue AGL during a liquidation"
+    FlywheelComptroller
+    InitSpeeds
+    Assert Equal (Comptroller AgileSpeed aZRX) 1e18
+    Assert Equal (Comptroller AgileSpeed aBAT) 0
+    --coburn zrx borrow, bat supply. geoff zrx supply
+    FastForward 600000 Blocks--1e18 borrow * (1 + 600000 * 0.000005) = 3.5e18 borrow > 6e18 collateral * 0.5 CF
+    Prep Geoff Some ZRX aZRX
+    From Geoff (AToken aZRX Liquidate Coburn aBAT 0.5e18)
+    -- zrx borrow index is updated and agl distributed
+    -- * new index = initVal + deltaBlocks * borrowSpeed * 1e36 / totalBorrows
+    -- * new index = 1e36 + 600000 * 1e18 * 1e36 / 1e18 = 6.00001E41
+    Assert Equal (Comptroller AgileBorrowState aZRX "index") 6.00001e41
+    Assert Equal (Comptroller AgileBorrowState aZRX "block") 600000
+    -- zrx supply index isnt updated and agl isnt distributed for zrx supply
+    Assert Equal (Comptroller AgileSupplyState aZRX "index") 1e36
+    Assert Equal (Comptroller AgileSupplyState aZRX "block") 0
+    Assert Equal (Comptroller AgileSupplierIndex aZRX Geoff) 1e36--no change, minted in init
+    -- bat supply/borrow index is not updated, since there is no agl speed
+    Assert Equal (Comptroller AgileSupplyState aBAT "index") 1e36
+    Assert Equal (Comptroller AgileSupplyState aBAT "block") 600000
+    -- neither is borrow state. block is 0 because update fn is never even called
+    Assert Equal (Comptroller AgileBorrowState aBAT "index") 1e36
+    Assert Equal (Comptroller AgileBorrowState aBAT "block") 0
+    --
+    Assert Equal (Comptroller AgileSupplierIndex aBAT Coburn) 1e36
+    Assert Equal (Comptroller AgileBorrowerIndex aZRX Coburn) 6.00001e41
+    Assert Equal (Bep20 AGL TokenBalance Coburn) 600000e18
+    Assert Equal (Comptroller AgileAccrued Coburn) 0
+    --
+    Assert Equal (Comptroller AgileSupplierIndex aBAT Geoff) 1e36
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 0
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+
+Test "Accrue AGL during a transfer"
+    FlywheelComptroller
+    InitSpeeds
+    FastForward 300000 Blocks
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 0
+    Assert Equal (Comptroller AgileSupplierIndex aZRX Geoff) 1e36
+    Transfer Geoff Jared 2.5e10 aZRX
+    -- new index = initVal + deltaBlocks * supplySpeed * 1e36 / totalSupply
+    -- new index = 1e36 + 300000 * 1e18 * 1e36 / 2.5e10 = 1.2000000000001e49
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 300000e18
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Comptroller AgileSupplyState aZRX "index") 1.2000000000001e49
+    Assert Equal (Comptroller AgileSupplyState aZRX "block") 300000
+    Assert Equal (Comptroller AgileSupplierIndex aZRX Geoff) 1.2000000000001e49
+    --
+    Assert Equal (Comptroller AgileAccrued Jared) 0
+    Assert Equal (Comptroller AgileSupplyState aZRX "index") 1.2000000000001e49
+    Assert Equal (Comptroller AgileSupplyState aZRX "block") 300000
+    Assert Equal (Comptroller AgileSupplierIndex aZRX Jared) 1.2000000000001e49
+
+Test "Accrues correctly when market is added, deactivated, and activated again"
+    FlywheelComptroller
+    InitSpeeds
+    NewAToken DAI aDAI
+    --
+    Support aDAI collateralFactor:0.5
+    Comptroller AddAgileMarkets aDAI
+    Assert Equal (Comptroller GetAgileMarkets) [(Address aZRX) (Address aBAT) (Address aDAI)]
+    Prep Jared Some DAI aDAI
+    Mint Jared 6e18 aDAI
+    EnterMarkets Geoff aZRX
+    Borrow Geoff 0.5e18 aDAI
+    Borrow Coburn 0.5e18 aDAI
+    Comptroller RefreshAgileSpeeds
+    Assert Equal (Comptroller AgileSpeed aZRX) 0.5e18
+    Assert Equal (Comptroller AgileSpeed aDAI) 0.5e18
+    --
+    FastForward 100 Blocks
+    Comptroller DropAgileMarket aDAI
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 75e18--half of adai, all of zrx(.25e18 + .5e18) * 100
+    Assert Equal (Comptroller GetAgileMarkets) [(Address aZRX) (Address aBAT)]
+    Assert Equal (Comptroller AgileSpeed aZRX) 1e18
+    Assert Equal (Comptroller AgileSpeed aDAI) 0
+    --
+    FastForward 100 Blocks
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 175e18-- += 1e18 * 100
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    --
+    Comptroller AddAgileMarkets aDAI
+    FastForward 100 Blocks
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 250e18--half of adai, all of zrx. += (.25 + .5) * 100
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+
+Test "TransferComp handles running out of AGL in Comptroller correctly"
+    FlywheelComptroller price:1.0 borrowRate:0.000005 agileInitAmount:1e18
+    InitSpeeds
+    FastForward 2 Blocks
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Comptroller AgileAccrued Geoff) 2e18
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 0
+    Give (Address Comptroller) 1e18 AGL
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 2e18
+
+Test "Changing AGL rate continues to distribute at the correct speed"
+    FlywheelComptroller
+    InitSpeeds
+    --
+    Assert Equal (Comptroller AgileSpeed aZRX) 1e18
+    FastForward 10 Blocks
+    Comptroller SetAgileRate 2e18
+    Assert Equal (Comptroller AgileSpeed aZRX) 2e18
+    FastForward 10 Blocks
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 30e18

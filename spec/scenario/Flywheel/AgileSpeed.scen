@@ -1,0 +1,93 @@
+-- Tests for the grants and math patch
+
+Macro FlywheelComptroller price=1.0 borrowRate=0.000005 agileInitAmount=5000000e18
+    Unitroller Deploy
+    PriceOracle Deploy Fixed price
+    PriceOracleProxy Deploy Admin (PriceOracle Address) (Address Zero) (Address Zero) (Address Zero) (Address Zero) (Address Zero)
+    ----g1
+    ComptrollerImpl Deploy ScenarioG1 ComptrollerScenG1
+    Unitroller SetPendingImpl ComptrollerScenG1
+    ComptrollerImpl ComptrollerScenG1 BecomeG1
+    --list some tokens
+    Comptroller SetPriceOracle (PriceOracleProxy Address)
+    Comptroller SetMaxAssets 20
+    Comptroller SetCloseFactor 0.5
+    Comptroller LiquidationIncentive 1.1
+    Comptroller SetAgileRate 1e18
+    NewAToken ZRX aZRX
+    NewAToken BAT aBAT
+    Support aZRX collateralFactor:0.5
+    Support aBAT collateralFactor:0.5
+    Comptroller AddAgileMarkets (aZRX aBAT)
+    Bep20 Deploy Standard AGL "AGL Token" 18
+    Give (Address Comptroller) agileInitAmount AGL
+    Comptroller Send "setAGLAddress(address)" (Address AGL)
+    Bep20 Deploy Standard XAI "XAI Token" 18
+    Give (Address Comptroller) agileInitAmount XAI
+    Comptroller Send "setXAIAddress(address)" (Address XAI)
+
+Macro GrantsComptroller
+    FlywheelComptroller
+    -- g2
+    ComptrollerImpl Deploy ScenarioG2 ComptrollerScen
+    Unitroller SetPendingImpl ComptrollerScen
+    ComptrollerImpl ComptrollerScen BecomeG2
+    -- current
+    ComptrollerImpl Deploy Scenario ComptrollerScen
+    Unitroller SetPendingImpl ComptrollerScen
+    ComptrollerImpl ComptrollerScen Become
+
+Macro InitSpeeds
+    Prep Geoff 100e18 ZRX aZRX
+    Mint Geoff 50e18 aZRX--tokenbalance = 50e18 / 2e9 = 2.5e10
+    Prep Coburn Some BAT aBAT
+    Mint Coburn 6e18 aBAT--tokenbalance = 6e18 / 2e9 = 3e9
+    EnterMarkets Coburn aBAT
+    Borrow Coburn 1e18 aZRX
+    Comptroller SetAgileSpeed aZRX 1
+    Comptroller SetAgileSpeed aBAT 1
+    Comptroller RefreshAgileSpeeds
+    Comptroller Send "setAGLAddress(address)" (Address AGL)
+
+Test "AGL speed can be set per market"
+    GrantsComptroller
+    InitSpeeds
+    -- Baseline agl amounts
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 0
+    -- Agile speed can be set
+    Comptroller SetAgileSpeed aZRX 2
+    FastForward 1000 Blocks
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 2000
+    -- Agile speed can be changed
+    Comptroller SetAgileSpeed aZRX 4
+    FastForward 1000 Blocks
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 6000
+    -- Agile speed can be removed
+    Comptroller SetAgileSpeed aZRX 0
+    FastForward 1000 Blocks
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Comptroller AgileAccrued Geoff) 0
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 6000
+
+Test "Set agl rate is removed"
+    GrantsComptroller
+    InitSpeeds
+    AllowFailures
+    Comptroller SetAgileRate 5
+
+Test "AGL is not claimed automatically"
+    GrantsComptroller
+    InitSpeeds
+    Comptroller SetAgileSpeed aZRX 2
+    FastForward 100000 Blocks
+    -- Check agl is not claimed automatically
+    Mint Geoff 50e18 aZRX
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 0
+    -- Confirm there was agl to claim
+    Comptroller ClaimAgile Geoff
+    Assert Equal (Bep20 AGL TokenBalance Geoff) 200000
