@@ -1,4 +1,4 @@
-import {ComptrollerErr, XAIControllerErr, TokenErr} from './ErrorReporterConstants';
+import {ComptrollerErr, TokenErr} from './ErrorReporterConstants';
 
 export interface ErrorReporter {
   getError(error: any): string | null
@@ -82,37 +82,6 @@ class ComptrollerErrorReporterType implements ErrorReporter {
     return detail.toString();
   }
 }
-class XAIControllerErrorReporterType implements ErrorReporter {
-  getError(error: any): string | null {
-    if (error === null) {
-      return null;
-    } else {
-      // TODO: This probably isn't right...
-      return XAIControllerErr.ErrorInv[Number(error)];
-    }
-  }
-
-  getInfo(info: any): string | null {
-    if (info === null) {
-      return null;
-    } else {
-      // TODO: This probably isn't right...
-      return XAIControllerErr.FailureInfoInv[Number(info)];
-    }
-  }
-
-  getDetail(error: any, detail: number): string {
-    if (this.getError(error) === "REJECTION") {
-      let xaicontrollerError = XAIControllerErrorReporter.getError(detail);
-
-      if (xaicontrollerError) {
-        return xaicontrollerError;
-      }
-    }
-
-    return detail.toString();
-  }
-}
 
 export function formatResult(errorReporter: ErrorReporter, result: any): string {
   const errorStr = errorReporter.getError(result);
@@ -127,4 +96,3 @@ export function formatResult(errorReporter: ErrorReporter, result: any): string 
 export const NoErrorReporter = new NoErrorReporterType();
 export const ATokenErrorReporter = new ATokenErrorReporterType();
 export const ComptrollerErrorReporter = new ComptrollerErrorReporterType();
-export const XAIControllerErrorReporter = new XAIControllerErrorReporterType();

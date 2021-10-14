@@ -110,10 +110,6 @@ async function checkIsAgile(world: World, comptroller: Comptroller, aToken: ATok
   return new BoolA(isAgile);
 }
 
-async function mintedXAIs(world: World, comptroller: Comptroller, user: string): Promise<NumberA> {
-  return new NumberA(await comptroller.methods.mintedXAIs(user).call());
-}
-
 export function comptrollerFetchers() {
   return [
     new Fetcher<{comptroller: Comptroller}, AddressA>(`
@@ -479,19 +475,6 @@ export function comptrollerFetchers() {
       async (world, {comptroller, AToken}) => {
         return new NumberA(await comptroller.methods.agileSpeeds(AToken._address).call());
       }
-    ),
-    new Fetcher<{ comptroller: Comptroller, address: AddressA }, NumberA>(`
-        #### MintedXAI
-
-        * "Comptroller MintedXAI <User>" - Returns a user's minted xai amount
-          * E.g. "Comptroller MintedXAI Geoff"
-      `,
-      "MintedXAI",
-      [
-        new Arg("comptroller", getComptroller, {implicit: true}),
-        new Arg<AddressA>("address", getAddressA)
-      ],
-      (world, { comptroller, address }) => mintedXAIs(world, comptroller, address.val),
     ),
     new Fetcher<{comptroller: Comptroller}, AddressA>(`
         #### BorrowCapGuardian

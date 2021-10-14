@@ -8,7 +8,6 @@ import "./ComptrollerInterface.sol";
 import "./ComptrollerStorage.sol";
 import "./Unitroller.sol";
 import "./Governance/AGL.sol";
-import "./XAI/XAI.sol";
 
 /**
  * @title Agile's Comptroller Contract
@@ -39,9 +38,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
     /// @notice Emitted when price oracle is changed
     event NewPriceOracle(PriceOracle oldPriceOracle, PriceOracle newPriceOracle);
 
-    /// @notice Emitted when XAI Vault info is changed
-    event NewXAIVaultInfo(address vault_, uint releaseStartBlock_, uint releaseInterval_);
-
     /// @notice Emitted when pause guardian is changed
     event NewPauseGuardian(address oldPauseGuardian, address newPauseGuardian);
 
@@ -51,12 +47,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
     /// @notice Emitted when an action is paused on a market
     event ActionPaused(AToken aToken, string action, bool pauseState);
 
-    /// @notice Emitted when Agile XAI rate is changed
-    event NewAgileXAIRate(uint oldAgileXAIRate, uint newAgileXAIRate);
-
-    /// @notice Emitted when Agile XAI Vault rate is changed
-    event NewAgileXAIVaultRate(uint oldAgileXAIVaultRate, uint newAgileXAIVaultRate);
-
     /// @notice Emitted when a new Agile speed is calculated for a market
     event AgileSpeedUpdated(AToken indexed aToken, uint newSpeed);
 
@@ -65,18 +55,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
 
     /// @notice Emitted when AGL is distributed to a borrower
     event DistributedBorrowerAgile(AToken indexed aToken, address indexed borrower, uint agileDelta, uint agileBorrowIndex);
-
-    /// @notice Emitted when AGL is distributed to a XAI minter
-    event DistributedXAIMinterAgile(address indexed xaiMinter, uint agileDelta, uint agileXAIMintIndex);
-
-    /// @notice Emitted when AGL is distributed to XAI Vault
-    event DistributedXAIVaultAgile(uint amount);
-
-    /// @notice Emitted when XAIController is changed
-    event NewXAIController(XAIControllerInterface oldXAIController, XAIControllerInterface newXAIController);
-
-    /// @notice Emitted when XAI mint rate is changed by admin
-    event NewXAIMintRate(uint oldXAIMintRate, uint newXAIMintRate);
 
     /// @notice Emitted when protocol state is changed by admin
     event ActionProtocolPaused(bool state);
@@ -799,13 +777,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
             }
         }
 
-        /// @dev XAI Integration^
-        (mErr, vars.sumBorrowPlusEffects) = addUInt(vars.sumBorrowPlusEffects, mintedXAIs[account]);
-        if (mErr != MathError.NO_ERROR) {
-            return (Error.MATH_ERROR, 0, 0);
-        }
-        /// @dev XAI Integration$
-
         // These are safe, as the underflow condition is checked first
         if (vars.sumCollateral > vars.sumBorrowPlusEffects) {
             return (Error.NO_ERROR, vars.sumCollateral - vars.sumBorrowPlusEffects, 0);
@@ -1098,35 +1069,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
         return state;
     }
 
-    /**
-      * @notice Sets a new XAI controller
-      * @dev Admin function to set a new XAI controller
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
-      */
-    function _setXAIController(XAIControllerInterface xaiController_) external returns (uint) {
-        // Check caller is admin
-        if (msg.sender != admin) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.SET_XAICONTROLLER_OWNER_CHECK);
-        }
-
-        XAIControllerInterface oldRate = xaiController;
-        xaiController = xaiController_;
-        emit NewXAIController(oldRate, xaiController_);
-    }
-
-    function _setXAIMintRate(uint newXAIMintRate) external returns (uint) {
-        // Check caller is admin
-        if (msg.sender != admin) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.SET_XAI_MINT_RATE_CHECK);
-        }
-
-        uint oldXAIMintRate = xaiMintRate;
-        xaiMintRate = newXAIMintRate;
-        emit NewXAIMintRate(oldXAIMintRate, newXAIMintRate);
-
-        return uint(Error.NO_ERROR);
-    }
-
     function _become(Unitroller unitroller) public {
         require(msg.sender == unitroller.admin(), "only unitroller admin can");
         require(unitroller._acceptImplementation() == 0, "not authorized");
@@ -1227,9 +1169,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
      * @param supplier The address of the supplier to distribute AGL to
      */
     function distributeSupplierAgile(address aToken, address supplier) internal {
-        if (address(xaiVaultAddress) != address(0)) {
-            releaseToVault();
-        }
 
         AgileMarketState storage supplyState = agileSupplyState[aToken];
         Double memory supplyIndex = Double({mantissa: supplyState.index});
@@ -1255,9 +1194,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
      * @param borrower The address of the borrower to distribute AGL to
      */
     function distributeBorrowerAgile(address aToken, address borrower, Exp memory marketBorrowIndex) internal {
-        if (address(xaiVaultAddress) != address(0)) {
-            releaseToVault();
-        }
 
         AgileMarketState storage borrowState = agileBorrowState[aToken];
         Double memory borrowIndex = Double({mantissa: borrowState.index});
@@ -1275,31 +1211,7 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
     }
 
     /**
-     * @notice Calculate AGL accrued by a XAI minter and possibly transfer it to them
-     * @dev XAI minters will not begin to accrue until after the first interaction with the protocol.
-     * @param xaiMinter The address of the XAI minter to distribute AGL to
-     */
-    function distributeXAIMinterAgile(address xaiMinter, bool distributeAll) public {
-        distributeAll;
-        if (address(xaiVaultAddress) != address(0)) {
-            releaseToVault();
-        }
-
-        if (address(xaiController) != address(0)) {
-            uint xaiMinterAccrued;
-            uint xaiMinterDelta;
-            uint xaiMintIndexMantissa;
-            uint err;
-            (err, xaiMinterAccrued, xaiMinterDelta, xaiMintIndexMantissa) = xaiController.calcDistributeXAIMinterAgile(xaiMinter);
-            if (err == uint(Error.NO_ERROR)) {
-                agileAccrued[xaiMinter] = xaiMinterAccrued;
-                emit DistributedXAIMinterAgile(xaiMinter, xaiMinterDelta, xaiMintIndexMantissa);
-            }
-        }
-    }
-
-    /**
-     * @notice Claim all the agl accrued by holder in all markets and XAI
+     * @notice Claim all the agl accrued by holder in all markets
      * @param holder The address to claim AGL for
      */
     function claimAgile(address holder) public {
@@ -1326,11 +1238,7 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
      */
     function claimAgile(address[] memory holders, AToken[] memory aTokens, bool borrowers, bool suppliers) public {
         uint j;
-        if(address(xaiController) != address(0)) {
-            xaiController.updateAgileXAIMintIndex();
-        }
         for (j = 0; j < holders.length; j++) {
-            distributeXAIMinterAgile(holders[j], true);
             agileAccrued[holders[j]] = grantAGLInternal(holders[j], agileAccrued[holders[j]]);
         }
         for (uint i = 0; i < aTokens.length; i++) {
@@ -1374,45 +1282,6 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
     /*** Agile Distribution Admin ***/
 
     /**
-     * @notice Set the amount of AGL distributed per block to XAI Mint
-     * @param agileXAIRate_ The amount of AGL wei per block to distribute to XAI Mint
-     */
-    function _setAgileXAIRate(uint agileXAIRate_) public {
-        require(msg.sender == admin, "only admin can");
-
-        uint oldXAIRate = agileXAIRate;
-        agileXAIRate = agileXAIRate_;
-        emit NewAgileXAIRate(oldXAIRate, agileXAIRate_);
-    }
-
-    /**
-     * @notice Set the amount of AGL distributed per block to XAI Vault
-     * @param agileXAIVaultRate_ The amount of AGL wei per block to distribute to XAI Vault
-     */
-    function _setAgileXAIVaultRate(uint agileXAIVaultRate_) public {
-        require(msg.sender == admin, "only admin can");
-
-        uint oldAgileXAIVaultRate = agileXAIVaultRate;
-        agileXAIVaultRate = agileXAIVaultRate_;
-        emit NewAgileXAIVaultRate(oldAgileXAIVaultRate, agileXAIVaultRate_);
-    }
-
-    /**
-     * @notice Set the XAI Vault infos
-     * @param vault_ The address of the XAI Vault
-     * @param releaseStartBlock_ The start block of release to XAI Vault
-     * @param minReleaseAmount_ The minimum release amount to XAI Vault
-     */
-    function _setXAIVaultInfo(address vault_, uint256 releaseStartBlock_, uint256 minReleaseAmount_) public {
-        require(msg.sender == admin, "only admin can");
-
-        xaiVaultAddress = vault_;
-        releaseStartBlock = releaseStartBlock_;
-        minReleaseAmount = minReleaseAmount_;
-        emit NewXAIVaultInfo(vault_, releaseStartBlock_, minReleaseAmount_);
-    }
-
-    /**
      * @notice Set AGL speed for a single market
      * @param aToken The market whose AGL speed to update
      * @param agileSpeed New AGL speed for market
@@ -1441,64 +1310,5 @@ contract ComptrollerG3 is ComptrollerV3Storage, ComptrollerInterfaceG1, Comptrol
      */
     function getAGLAddress() public view returns (address) {
         return 0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63;
-    }
-
-    /*** XAI functions ***/
-
-    /**
-     * @notice Set the minted XAI amount of the `owner`
-     * @param owner The address of the account to set
-     * @param amount The amount of XAI to set to the account
-     * @return The number of minted XAI by `owner`
-     */
-    function setMintedXAIOf(address owner, uint amount) external onlyProtocolAllowed returns (uint) {
-        // Pausing is a very serious situation - we revert to sound the alarms
-        require(!mintXAIGuardianPaused && !repayXAIGuardianPaused, "XAI is paused");
-        // Check caller is xaiController
-        if (msg.sender != address(xaiController)) {
-            return fail(Error.REJECTION, FailureInfo.SET_MINTED_XAI_REJECTION);
-        }
-        mintedXAIs[owner] = amount;
-
-        return uint(Error.NO_ERROR);
-    }
-
-    /**
-     * @notice Transfer AGL to XAI Vault
-     */
-    function releaseToVault() public {
-        if(releaseStartBlock == 0 || getBlockNumber() < releaseStartBlock) {
-            return;
-        }
-
-        AGL agl = AGL(getAGLAddress());
-
-        uint256 aglBalance = agl.balanceOf(address(this));
-        if(aglBalance == 0) {
-            return;
-        }
-
-
-        uint256 actualAmount;
-        uint256 deltaBlocks = sub_(getBlockNumber(), releaseStartBlock);
-        // releaseAmount = agileXAIVaultRate * deltaBlocks
-        uint256 _releaseAmount = mul_(agileXAIVaultRate, deltaBlocks);
-
-        if (_releaseAmount < minReleaseAmount) {
-            return;
-        }
-
-        if (aglBalance >= _releaseAmount) {
-            actualAmount = _releaseAmount;
-        } else {
-            actualAmount = aglBalance;
-        }
-
-        releaseStartBlock = getBlockNumber();
-
-        agl.transfer(xaiVaultAddress, actualAmount);
-        emit DistributedXAIVaultAgile(actualAmount);
-
-        IXAIVault(xaiVaultAddress).updatePendingRewards();
     }
 }

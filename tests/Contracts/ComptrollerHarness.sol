@@ -117,10 +117,6 @@ contract ComptrollerHarness is Comptroller {
         distributeSupplierAgile(aToken, supplier);
     }
 
-    function harnessDistributeXAIMinterAgile(address xaiMinter) public {
-        distributeXAIMinterAgile(xaiMinter);
-    }
-
     function harnessTransferAgile(address user, uint userAccrued, uint threshold) public returns (uint) {
         if (userAccrued > 0 && userAccrued >= threshold) {
             return grantAGLInternal(user, userAccrued);
@@ -133,10 +129,6 @@ contract ComptrollerHarness is Comptroller {
             // temporarily set agileSpeed to 1 (will be fixed by `harnessRefreshAgileSpeeds`)
             setAgileSpeedInternal(AToken(aTokens[i]), 1);
         }
-    }
-
-    function harnessSetMintedXAIs(address user, uint amount) public {
-        mintedXAIs[user] = amount;
     }
 
     function harnessFastForward(uint blocks) public returns (uint) {
@@ -200,10 +192,6 @@ contract BoolComptroller is ComptrollerInterface {
     uint calculatedSeizeTokens;
 
     bool public protocolPaused = false;
-
-    mapping(address => uint) public mintedXAIs;
-    bool xaiFailCalculateSeizeTokens;
-    uint xaiCalculatedSeizeTokens;
 
     uint noError = 0;
     uint opaqueError = noError + 11; // an arbitrary, opaque error code
@@ -393,14 +381,6 @@ contract BoolComptroller is ComptrollerInterface {
 
     /*** Special Liquidation Calculation ***/
 
-    function liquidateXAICalculateSeizeTokens(
-        address _aTokenCollateral,
-        uint _repayAmount) external view returns (uint, uint) {
-        _aTokenCollateral;
-        _repayAmount;
-        return xaiFailCalculateSeizeTokens ? (opaqueError, 0) : (noError, xaiCalculatedSeizeTokens);
-    }
-
     /**** Mock Settors ****/
 
     /*** Policy Hooks ***/
@@ -469,34 +449,6 @@ contract BoolComptroller is ComptrollerInterface {
 
     function setFailCalculateSeizeTokens(bool shouldFail) public {
         failCalculateSeizeTokens = shouldFail;
-    }
-
-    function setXAICalculatedSeizeTokens(uint xaiSeizeTokens_) public {
-        xaiCalculatedSeizeTokens = xaiSeizeTokens_;
-    }
-
-    function setXAIFailCalculateSeizeTokens(bool xaiShouldFail) public {
-        xaiFailCalculateSeizeTokens = xaiShouldFail;
-    }
-
-    function harnessSetMintedXAIOf(address owner, uint amount) external returns (uint) {
-        mintedXAIs[owner] = amount;
-        return noError;
-    }
-
-    // function mintedXAIs(address owner) external pure returns (uint) {
-    //     owner;
-    //     return 1e18;
-    // }
-
-    function setMintedXAIOf(address owner, uint amount) external returns (uint) {
-        owner;
-        amount;
-        return noError;
-    }
-
-    function xaiMintRate() external pure returns (uint) {
-        return 1e18;
     }
 
     function setTreasuryData(address treasuryGuardian_, address treasuryAddress_, uint treasuryPercent_) external {

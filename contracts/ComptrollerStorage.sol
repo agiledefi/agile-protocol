@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 import "./AToken.sol";
 import "./PriceOracle.sol";
-import "./XAIControllerInterface.sol";
 
 contract UnitrollerAdminStorage {
     /**
@@ -122,42 +121,14 @@ contract ComptrollerV1Storage is UnitrollerAdminStorage {
     /// @notice The AGL accrued but not yet transferred to each user
     mapping(address => uint) public agileAccrued;
 
-    /// @notice The Address of XAIController
-    XAIControllerInterface public xaiController;
-
-    /// @notice The minted XAI amount to each user
-    mapping(address => uint) public mintedXAIs;
-
-    /// @notice XAI Mint Rate as a percentage
-    uint public xaiMintRate;
-
-    /**
-     * @notice The Pause Guardian can pause certain actions as a safety mechanism.
-     */
-    bool public mintXAIGuardianPaused;
-    bool public repayXAIGuardianPaused;
-
     /**
      * @notice Pause/Unpause whole protocol actions
      */
     bool public protocolPaused;
 
-    /// @notice The rate at which the flywheel distributes AGL to XAI Minters, per block
-    uint public agileXAIRate;
 }
 
 contract ComptrollerV2Storage is ComptrollerV1Storage {
-    /// @notice The rate at which the flywheel distributes AGL to XAI Vault, per block
-    uint public agileXAIVaultRate;
-
-    // address of XAI Vault
-    address public xaiVaultAddress;
-
-    // start block of release to XAI Vault
-    uint256 public releaseStartBlock;
-
-    // minimum release amount to XAI Vault
-    uint256 public minReleaseAmount;
 }
 
 contract ComptrollerV3Storage is ComptrollerV2Storage {

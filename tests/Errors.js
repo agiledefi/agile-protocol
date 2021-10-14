@@ -12,7 +12,6 @@ const contents = solparse.parseFile(errorReporterPath);
 const [
   ComptrollerErrorReporter,
   TokenErrorReporter,
-  XAIControllerErrorReporter,
 ] = contents.body.filter(k => k.type === 'ContractStatement');
 
 function invert(object) {
@@ -38,7 +37,6 @@ const whitePaperModel = solparse.parseFile(whitePaperModelPath).body.find(k => k
 module.exports = {
   ComptrollerErr: parse(ComptrollerErrorReporter),
   TokenErr: parse(TokenErrorReporter),
-  XAIControllerErr: parse(XAIControllerErrorReporter),
   MathErr: {
     Error: MathError,
     ErrorInv: MathErrorInv

@@ -22,9 +22,6 @@ Macro FlywheelComptroller price=1.0 borrowRate=0.000005 agileInitAmount=5000000e
     Bep20 Deploy Standard AGL "AGL Token" 18
     Give (Address Comptroller) agileInitAmount AGL
     Comptroller Send "setAGLAddress(address)" (Address AGL)
-    Bep20 Deploy Standard XAI "XAI Token" 18
-    Give (Address Comptroller) agileInitAmount XAI
-    Comptroller Send "setXAIAddress(address)" (Address XAI)
 
 Macro GrantsComptroller
     FlywheelComptroller

@@ -16,14 +16,6 @@ Macro PricedComptroller closeFactor=0.1 maxAssets=20
     Comptroller SetPriceOracle (PriceOracleProxy Address)
     Comptroller SetCloseFactor closeFactor
 
-Macro PricedComptrollerWithXAIController closeFactor=0.1 maxAssets=20
-    PricedComptroller closeFactor maxAssets
-    NewXAIController
-    Comptroller SetXAIController (Address XAIUnitroller)
-    XAIController SetComptroller (Address Unitroller)
-    Comptroller SetXAIMintRate 5e3
-    NewXAI
-
 Macro NewComptroller price=1.0 closeFactor=0.1 maxAssets=20
     Unitroller Deploy
     PriceOracle Deploy Fixed price
@@ -53,26 +45,6 @@ Macro NewFeeComptroller price=1.0 closeFactor=0.1 maxAssets=20
     Comptroller SetPriceOracle (PriceOracleProxy Address)
     Comptroller SetCloseFactor closeFactor
     Comptroller SetTreasuryData Guardian Jared 1e14
-
-Macro NewComptrollerWithXAIController price=1.0 closeFactor=0.1 maxAssets=20
-    NewComptroller price closeFactor maxAssets
-    NewXAIController
-    Comptroller SetXAIController (Address XAIUnitroller)
-    XAIController SetComptroller (Address Unitroller)
-    Comptroller SetXAIMintRate 5e3
-
-Macro NewXAIController
-    XAIUnitroller Deploy
-    --current
-    XAIControllerImpl Deploy Scenario ScenXAIController
-    XAIUnitroller SetPendingImpl ScenXAIController
-    XAIControllerImpl ScenXAIController Become
-    XAIController Initialize
-
-Macro NewXAI
-    XAI Deploy Admin
-    XAI Rely (Address XAIUnitroller)
-    XAIController Send "setXAIAddress(address)" (Address XAI)
 
 Macro NewAToken bep20 aToken borrowRate=0.000005 initialExchangeRate=2e9 decimals=8 tokenType=Standard delegatorType=ABep20DelegatorScenario aTokenType=ABep20DelegateScenario admin=Admin becomeImplementationData="0x0"
     Bep20 Deploy tokenType bep20 bep20
@@ -121,13 +93,6 @@ Macro SetPriceCF aToken price collateralFactor
 Macro Give user amount bep20
     Bep20 bep20 Faucet user amount
 
-Macro GiveXAI user amount
-    XAI Faucet user amount
-
-Macro PrepXAI user amount token allowanceAmount=Nothing
-    GiveXAI user amount
-    From user (XAI Approve token (Default allowanceAmount amount))
-
 Macro Donate token amount
     (Trx Value amount (AToken token Donate))
 
@@ -171,12 +136,6 @@ Macro Borrow user amount token
 Macro RepayBorrow user amount token
     From user (AToken token RepayBorrow amount)
 
-Macro MintXAI user amount
-    From user (XAIController Mint amount)
-
-Macro RepayXAI user amount
-    From user (XAIController Repay amount)
-
 Macro RepayBorrowBnb user amount token
     From user (Trx GasPrice 0 (Trx Value amount (AToken token RepayBorrow)))
 
@@ -191,9 +150,6 @@ Macro RepayBorrowBnbBehalf user behalf amount token
 
 Macro Liquidate liquidator _ borrower amount token _ collateral
     From liquidator (AToken token Liquidate borrower collateral amount)
-
-Macro LiquidateXAI liquidator _ borrower amount _ collateral
-    From liquidator (XAIController LiquidateXAI borrower collateral amount)
 
 Macro LiquidateBnbColl liquidator _ borrower amount token _ collateral
     From liquidator (Trx GasPrice 0 (AToken token Liquidate borrower collateral amount))

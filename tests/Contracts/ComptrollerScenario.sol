@@ -5,7 +5,6 @@ import "../../contracts/Comptroller.sol";
 contract ComptrollerScenario is Comptroller {
     uint public blockNumber;
     address public aglAddress;
-    address public xaiAddress;
 
     constructor() Comptroller() public {}
 
@@ -15,14 +14,6 @@ contract ComptrollerScenario is Comptroller {
 
     function getAGLAddress() public view returns (address) {
         return aglAddress;
-    }
-
-    function setXAIAddress(address xaiAddress_) public {
-        xaiAddress = xaiAddress_;
-    }
-
-    function getXAIAddress() public view returns (address) {
-        return xaiAddress;
     }
 
     function membershipLength(AToken aToken) public view returns (uint) {

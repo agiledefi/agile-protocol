@@ -8,11 +8,8 @@ import { mustString } from './Utils';
 
 import { ABep20Delegate } from './Contract/ABep20Delegate';
 import { AGL } from './Contract/AGL';
-import { XAI } from './Contract/XAI';
 import { Comptroller } from './Contract/Comptroller';
 import { ComptrollerImpl } from './Contract/ComptrollerImpl';
-import { XAIController } from './Contract/XAIController';
-import { XAIControllerImpl } from './Contract/XAIControllerImpl';
 import { AToken } from './Contract/AToken';
 import { Governor } from './Contract/Governor';
 import { Bep20 } from './Contract/Bep20';
@@ -84,10 +81,6 @@ export async function getUnitroller(world: World): Promise<Comptroller> {
   return getWorldContract(world, [['Contracts', 'Unitroller']]);
 }
 
-export async function getXAIUnitroller(world: World): Promise<XAIController> {
-  return getWorldContract(world, [['Contracts', 'XAIUnitroller']]);
-}
-
 export async function getMaximillion(world: World): Promise<Comptroller> {
   return getWorldContract(world, [['Contracts', 'Maximillion']]);
 }
@@ -98,14 +91,6 @@ export async function getComptroller(world: World): Promise<Comptroller> {
 
 export async function getComptrollerImpl(world: World, comptrollerImplArg: Event): Promise<ComptrollerImpl> {
   return getWorldContract(world, [['Comptroller', mustString(comptrollerImplArg), 'address']]);
-}
-
-export async function getXAIController(world: World): Promise<XAIController> {
-  return getWorldContract(world, [['Contracts', 'XAIController']]);
-}
-
-export async function getXAIControllerImpl(world: World, xaicontrollerImplArg: Event): Promise<XAIControllerImpl> {
-  return getWorldContract(world, [['XAIController', mustString(xaicontrollerImplArg), 'address']]);
 }
 
 export function getATokenAddress(world: World, aTokenArg: string): string {
@@ -145,23 +130,6 @@ export async function getAGLData(
 ): Promise<[AGL, string, Map<string, string>]> {
   let contract = await getAGL(world, <Event>(<any>agileArg));
   let data = getContractData(world, [['AGL', agileArg]]);
-
-  return [contract, agileArg, <Map<string, string>>(<any>data)];
-}
-
-export async function getXAI(
-  world: World,
-  agileArg: Event
-): Promise<XAI> {
-  return getWorldContract(world, [['XAI', 'address']]);
-}
-
-export async function getXAIData(
-  world: World,
-  agileArg: string
-): Promise<[XAI, string, Map<string, string>]> {
-  let contract = await getXAI(world, <Event>(<any>agileArg));
-  let data = getContractData(world, [['XAI', agileArg]]);
 
   return [contract, agileArg, <Map<string, string>>(<any>data)];
 }
@@ -231,16 +199,6 @@ export async function getComptrollerImplData(
   let data = getContractData(world, [['Comptroller', comptrollerImplArg]]);
 
   return [contract, comptrollerImplArg, <Map<string, string>>(<any>data)];
-}
-
-export async function getXAIControllerImplData(
-  world: World,
-  xaicontrollerImplArg: string
-): Promise<[XAIControllerImpl, string, Map<string, string>]> {
-  let contract = await getComptrollerImpl(world, <Event>(<any>xaicontrollerImplArg));
-  let data = getContractData(world, [['XAIController', xaicontrollerImplArg]]);
-
-  return [contract, xaicontrollerImplArg, <Map<string, string>>(<any>data)];
 }
 
 export function getAddress(world: World, addressArg: string): string {

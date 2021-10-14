@@ -1,7 +1,7 @@
 const { last } = require('./Utils/JS');
 const { address, bnbUnsigned } = require('./Utils/BSC');
 const diff = require('jest-diff').default;
-const { ComptrollerErr, XAIControllerErr, TokenErr, IRErr, MathErr } = require('./Errors');
+const { ComptrollerErr, TokenErr, IRErr, MathErr } = require('./Errors');
 
 function opts(comment) {
   return {
@@ -306,10 +306,6 @@ expect.extend({
     return hasError.call(this, actual, expectedErrorName, ComptrollerErr);
   },
 
-  toHaveXAITrollError(actual, expectedErrorName) {
-    return hasError.call(this, actual, expectedErrorName, XAIControllerErr);
-  },
-
   toHaveTokenError(actual, expectedErrorName) {
     return hasError.call(this, actual, expectedErrorName, TokenErr);
   },
@@ -322,16 +318,8 @@ expect.extend({
     return hasFailure.call(this, result, err, info, detail, ComptrollerErr, 'toHaveTrollFailure');
   },
 
-  toHaveXAITrollFailure(result, err, info, detail=undefined) {
-    return hasFailure.call(this, result, err, info, detail, XAIControllerErr, 'toHaveXAITrollFailure');
-  },
-
   toHaveTokenFailure(result, err, info, detail=undefined) {
     return hasFailure.call(this, result, err, info, detail, TokenErr, 'toHaveTokenFailure');
-  },
-
-  toHaveXAITrollMathFailure(result, info, detail) {
-    return hasFailure.call(this, result, 'MATH_ERROR', info, detail && (MathErr.Error[detail] || -1), XAIControllerErr, 'toHaveXAITrollMathFailure');
   },
 
   toHaveTokenMathFailure(result, info, detail) {
@@ -344,14 +332,6 @@ expect.extend({
 
   toHaveTrollErrorTuple(result, tuple, cmp=undefined) {
     return hasErrorTuple.call(this, result, tuple, ComptrollerErr, cmp);
-  },
-
-  toHaveXAITrollReject(result, info, detail) {
-    return hasFailure.call(this, result, 'REJECTION', info, detail && ComptrollerErr.Error[detail], XAIControllerErr, 'toHaveXAITrollReject');
-  },
-
-  toHaveXAITrollErrorTuple(result, tuple, cmp=undefined) {
-    return hasErrorTuple.call(this, result, tuple, XAIControllerErr, cmp);
   },
 
   toEqualNumber(actual, expected) {

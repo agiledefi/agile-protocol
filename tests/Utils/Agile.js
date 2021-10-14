@@ -20,23 +20,10 @@ async function makeComptroller(opts = {}) {
   if (kind == 'bool') {
     const comptroller = await deploy('BoolComptroller');
     const agl = opts.agl || await deploy('AGL', [opts.agileOwner || root]);
-    const xai = opts.xai || await makeXAI();
-
-    const xaiunitroller = await deploy('XAIUnitroller');
-    const xaicontroller = await deploy('XAIControllerHarness');
-    
-    await send(xaiunitroller, '_setPendingImplementation', [xaicontroller._address]);
-    await send(xaicontroller, '_become', [xaiunitroller._address]);
-    mergeInterface(xaiunitroller, xaicontroller);
-
-    await send(xaiunitroller, '_setComptroller', [comptroller._address]);
-    await send(xaiunitroller, 'setXAIAddress', [xai._address]);
-    await send(xaiunitroller, 'initialize');
-    await send(xai, 'rely', [xaiunitroller._address]);
 
     //await send(unitroller, '_setTreasuryData', [treasuryGuardian, treasuryAddress, 1e14]);
 
-    return Object.assign(comptroller, { agl, xai, xaicontroller: xaiunitroller });
+    return Object.assign(comptroller, { agl });
   }
 
   if (kind == 'boolFee') {
@@ -88,38 +75,22 @@ async function makeComptroller(opts = {}) {
     const closeFactor = bnbMantissa(dfn(opts.closeFactor, .051));
     const liquidationIncentive = bnbMantissa(1);
     const agl = opts.agl || await deploy('AGL', [opts.agileOwner || root]);
-    const xai = opts.xai || await makeXAI();
     const agileRate = bnbUnsigned(dfn(opts.agileRate, 1e18));
-    const agileXAIRate = bnbUnsigned(dfn(opts.agileXAIRate, 5e17));
     const agileMarkets = opts.agileMarkets || [];
 
     await send(unitroller, '_setPendingImplementation', [comptroller._address]);
     await send(comptroller, '_become', [unitroller._address]);
     mergeInterface(unitroller, comptroller);
 
-    const xaiunitroller = await deploy('XAIUnitroller');
-    const xaicontroller = await deploy('XAIControllerHarness');
-    
-    await send(xaiunitroller, '_setPendingImplementation', [xaicontroller._address]);
-    await send(xaicontroller, '_become', [xaiunitroller._address]);
-    mergeInterface(xaiunitroller, xaicontroller);
-
-    await send(unitroller, '_setXAIController', [xaiunitroller._address]);
-    await send(xaiunitroller, '_setComptroller', [unitroller._address]);
     await send(unitroller, '_setLiquidationIncentive', [liquidationIncentive]);
     await send(unitroller, '_setCloseFactor', [closeFactor]);
     await send(unitroller, '_setPriceOracle', [priceOracle._address]);
     await send(unitroller, 'setAGLAddress', [agl._address]); // harness only
-    await send(xaiunitroller, 'setXAIAddress', [xai._address]); // harness only
     await send(unitroller, 'harnessSetAgileRate', [agileRate]);
-    await send(unitroller, '_setAgileXAIRate', [agileXAIRate]);
-    await send(xaiunitroller, '_initializeAgileXAIState', [0]);
-    await send(xaiunitroller, 'initialize');
-    await send(xai, 'rely', [xaiunitroller._address]);
-
+    
     await send(unitroller, '_setTreasuryData', [treasuryGuardian, treasuryAddress, 1e14]);
 
-    return Object.assign(unitroller, { priceOracle, agl, xai, xaiunitroller });
+    return Object.assign(unitroller, { priceOracle, agl });
   }
 }
 
@@ -238,22 +209,6 @@ async function makeAToken(opts = {}) {
   return Object.assign(aToken, { name, symbol, underlying, comptroller, interestRateModel });
 }
 
-async function makeXAI(opts = {}) {
-  const {
-    chainId = 97
-  } = opts || {};
-
-  let xai;
-
-  xai = await deploy('XAIScenario',
-    [
-      chainId
-    ]
-  );
-
-  return Object.assign(xai);
-}
-
 async function makeInterestRateModel(opts = {}) {
   const {
     root = saddle.account,
@@ -344,14 +299,6 @@ async function setBalance(aToken, account, balance) {
   return await send(aToken, 'harnessSetBalance', [account, balance]);
 }
 
-async function setMintedXAIOf(comptroller, account, balance) {
-  return await send(comptroller, 'harnessSetMintedXAIOf', [account, balance]);
-}
-
-async function setXAIBalance(xai, account, balance) {
-  return await send(xai, 'harnessSetBalanceOf', [account, balance]);
-}
-
 async function setBNBBalance(aBnb, balance) {
   const current = await bnbBalance(aBnb._address);
   const root = saddle.account;
@@ -382,33 +329,6 @@ async function getBalances(aTokens, accounts) {
   return balances;
 }
 
-async function getBalancesWithXAI(xai, aTokens, accounts) {
-  const balances = {};
-  for (let aToken of aTokens) {
-    const aBalances = balances[aToken._address] = {};
-    const xaiBalancesData = balances[xai._address] = {};
-    for (let account of accounts) {
-      aBalances[account] = {
-        bnb: await bnbBalance(account),
-        cash: aToken.underlying && await balanceOf(aToken.underlying, account),
-        tokens: await balanceOf(aToken, account),
-        borrows: (await borrowSnapshot(aToken, account)).principal
-      };
-      xaiBalancesData[account] = {
-        xai: (await balanceOf(xai, account)),
-      };
-    }
-    aBalances[aToken._address] = {
-      bnb: await bnbBalance(aToken._address),
-      cash: aToken.underlying && await balanceOf(aToken.underlying, aToken._address),
-      tokens: await totalSupply(aToken),
-      borrows: await totalBorrows(aToken),
-      reserves: await totalReserves(aToken),
-    };
-  }
-  return balances;
-}
-
 async function adjustBalances(balances, deltas) {
   for (let delta of deltas) {
     let aToken, account, key, diff;
@@ -423,40 +343,12 @@ async function adjustBalances(balances, deltas) {
   return balances;
 }
 
-async function adjustBalancesWithXAI(balances, deltas, xai) {
-  for (let delta of deltas) {
-    let aToken, account, key, diff;
-    if (delta[0]._address != xai._address) {
-      if (delta.length == 4) {
-        ([aToken, account, key, diff] = delta);
-      } else {
-        ([aToken, key, diff] = delta);
-        account = aToken._address;
-      }
-      balances[aToken._address][account][key] = balances[aToken._address][account][key].add(diff);
-    } else {
-      [aToken, account, key, diff] = delta;
-      balances[xai._address][account][key] = balances[xai._address][account][key].add(diff);
-    }
-  }
-  return balances;
-}
-
 async function preApprove(aToken, from, amount, opts = {}) {
   if (dfn(opts.faucet, true)) {
     expect(await send(aToken.underlying, 'harnessSetBalance', [from, amount], { from })).toSucceed();
   }
 
   return send(aToken.underlying, 'approve', [aToken._address, amount], { from });
-}
-
-async function preApproveXAI(comptroller, xai, from, to, amount, opts = {}) {
-  if (dfn(opts.faucet, true)) {
-    expect(await send(xai, 'harnessSetBalanceOf', [from, amount], { from })).toSucceed();
-    await send(comptroller, 'harnessSetMintedXAIOf', [from, amount]);
-  }
-
-  return send(xai, 'approve', [to, amount], { from });
 }
 
 async function quickMint(aToken, minter, mintAmount, opts = {}) {
@@ -470,15 +362,6 @@ async function quickMint(aToken, minter, mintAmount, opts = {}) {
     expect(await send(aToken, 'harnessSetExchangeRate', [bnbMantissa(opts.exchangeRate)])).toSucceed();
   }
   return send(aToken, 'mint', [mintAmount], { from: minter });
-}
-
-async function quickMintXAI(comptroller, xai, xaiMinter, xaiMintAmount, opts = {}) {
-  // make sure to accrue interest
-  await fastForward(xai, 1);
-
-  expect(await send(xai, 'harnessSetBalanceOf', [xaiMinter, xaiMintAmount], { xaiMinter })).toSucceed();
-  expect(await send(comptroller, 'harnessSetMintedXAIs', [xaiMinter, xaiMintAmount], { xaiMinter })).toSucceed();
-  expect(await send(xai, 'harnessIncrementTotalSupply', [xaiMintAmount], { xaiMinter })).toSucceed();
 }
 
 async function preSupply(aToken, account, tokens, opts = {}) {
@@ -537,17 +420,9 @@ async function pretendBorrow(aToken, borrower, accountIndex, marketIndex, princi
   await send(aToken, 'harnessSetBlockNumber', [bnbUnsigned(blockNumber)]);
 }
 
-async function pretendXAIMint(comptroller, xaicontroller, xai, xaiMinter, principalRaw, totalSupply, blockNumber = 2e7) {
-  await send(comptroller, 'harnessSetMintedXAIOf', [xaiMinter, bnbUnsigned(principalRaw)]);
-  await send(xai, 'harnessIncrementTotalSupply', [bnbUnsigned(principalRaw)]);
-  await send(xai, 'harnessSetBalanceOf', [xaiMinter, bnbUnsigned(principalRaw)]);
-  await send(xaicontroller, 'harnessSetBlockNumber', [bnbUnsigned(blockNumber)]);
-}
-
 module.exports = {
   makeComptroller,
   makeAToken,
-  makeXAI,
   makeInterestRateModel,
   makePriceOracle,
   makeToken,
@@ -560,18 +435,12 @@ module.exports = {
   enterMarkets,
   fastForward,
   setBalance,
-  setMintedXAIOf,
-  setXAIBalance,
   setBNBBalance,
   getBalances,
-  getBalancesWithXAI,
   adjustBalances,
-  adjustBalancesWithXAI,
 
   preApprove,
-  preApproveXAI,
   quickMint,
-  quickMintXAI,
 
   preSupply,
   quickRedeem,
@@ -583,5 +452,4 @@ module.exports = {
   getBorrowRate,
   getSupplyRate,
   pretendBorrow,
-  pretendXAIMint
 };

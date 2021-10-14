@@ -43,9 +43,6 @@ Comptroller AddAgileMarkets (aZRX aBAT)
 Bep20 Deploy Standard AGL "AGL Token" 18
 Give (Address Comptroller) 5000000e18 AGL
 Comptroller Send "setAGLAddress(address)" (Address AGL)
-Bep20 Deploy Standard XAI "XAI Token" 18
-Give (Address Comptroller) 5000000e18 XAI
-Comptroller Send "setXAIAddress(address)" (Address XAI)
 
 Comptroller RefreshAgileSpeeds
 

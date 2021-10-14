@@ -56,7 +56,6 @@ describe('Spinarama', () => {
       const aToken = await makeAToken({supportMarket: true, underlyingPrice: 1});
       await send(aToken.underlying, 'harnessSetBalance', [from, 100], {from});
       await send(aToken.underlying, 'approve', [aToken._address, 10], {from});
-      await send(aToken.comptroller.xai, 'approve', [aToken.comptroller._address, 100], {from});
       await minerStop();
       const p1 = send(aToken, 'mint', [10], {from});
       const p2 = send(aToken, 'redeemUnderlying', [10], {from});
@@ -95,7 +94,6 @@ describe('Spinarama', () => {
       await send(aToken2, 'harnessSetTotalSupply', [100]);
       await send(aToken2.underlying, 'approve', [aToken2._address, 10], {from});
       await send(aToken2, 'harnessSetExchangeRate', [bnbMantissa(1)]);
-      await send(aToken1.comptroller.xai, 'approve', [aToken1.comptroller._address, 100], {from});
       expect(await enterMarkets([aToken1, aToken2], from)).toSucceed();
       expect(await send(aToken1, 'mint', [10], {from})).toSucceed();
       expect(await send(aToken2, 'borrow', [2], {from})).toSucceed();

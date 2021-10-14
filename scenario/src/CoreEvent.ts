@@ -14,11 +14,8 @@ import { AddressA, EventV, NothingA, NumberA, StringA, Value } from './Value';
 import { Arg, Command, processCommandEvent, View } from './Command';
 import { assertionCommands, processAssertionEvent } from './Event/AssertionEvent';
 import { comptrollerCommands, processComptrollerEvent } from './Event/ComptrollerEvent';
-import { xaicontrollerCommands, processXAIControllerEvent } from './Event/XAIControllerEvent';
 import { processUnitrollerEvent, unitrollerCommands } from './Event/UnitrollerEvent';
-import { processXAIUnitrollerEvent, xaiunitrollerCommands } from './Event/XAIUnitrollerEvent';
 import { comptrollerImplCommands, processComptrollerImplEvent } from './Event/ComptrollerImplEvent';
-import { xaicontrollerImplCommands, processXAIControllerImplEvent } from './Event/XAIControllerImplEvent';
 import { aTokenCommands, processATokenEvent } from './Event/ATokenEvent';
 import { aTokenDelegateCommands, processATokenDelegateEvent } from './Event/ATokenDelegateEvent';
 import { bep20Commands, processBep20Event } from './Event/Bep20Event';
@@ -30,7 +27,6 @@ import { invariantCommands, processInvariantEvent } from './Event/InvariantEvent
 import { expectationCommands, processExpectationEvent } from './Event/ExpectationEvent';
 import { timelockCommands, processTimelockEvent } from './Event/TimelockEvent';
 import { aglCommands, processAGLEvent } from './Event/AGLEvent';
-import { xaiCommands, processXAIEvent } from './Event/XAIEvent';
 import { governorCommands, processGovernorEvent } from './Event/GovernorEvent';
 import { processTrxEvent, trxCommands } from './Event/TrxEvent';
 import { getFetchers, getCoreValue } from './CoreValue';
@@ -676,45 +672,6 @@ export const commands: (View<any> | ((world: World) => Promise<View<any>>))[] = 
 
   new Command<{ event: EventV }>(
     `
-      #### XAIUnitroller
-
-      * "XAIUnitroller ...event" - Runs given XAIUnitroller event
-        * E.g. "XAIUnitroller SetPendingImpl MyXAIControllerImpl"
-    `,
-    'XAIUnitroller',
-    [new Arg('event', getEventV, { variadic: true })],
-    (world, from, { event }) => processXAIUnitrollerEvent(world, event.val, from),
-    { subExpressions: xaiunitrollerCommands() }
-  ),
-
-  new Command<{ event: EventV }>(
-    `
-      #### XAIController
-
-      * "XAIController ...event" - Runs given XAIController event
-        * E.g. "XAIController mint 0.5"
-    `,
-    'XAIController',
-    [new Arg('event', getEventV, { variadic: true })],
-    (world, from, { event }) => processXAIControllerEvent(world, event.val, from),
-    { subExpressions: xaicontrollerCommands() }
-  ),
-
-  new Command<{ event: EventV }>(
-    `
-      #### XAIControllerImpl
-
-      * "XAIControllerImpl ...event" - Runs given XAIControllerImpl event
-        * E.g. "XAIControllerImpl MyImpl Become"
-    `,
-    'XAIControllerImpl',
-    [new Arg('event', getEventV, { variadic: true })],
-    (world, from, { event }) => processXAIControllerImplEvent(world, event.val, from),
-    { subExpressions: xaicontrollerImplCommands() }
-  ),
-
-  new Command<{ event: EventV }>(
-    `
       #### AToken
 
       * "AToken ...event" - Runs given AToken event
@@ -836,21 +793,6 @@ export const commands: (View<any> | ((world: World) => Promise<View<any>>))[] = 
       return processAGLEvent(world, event.val, from);
     },
     { subExpressions: aglCommands() }
-  ),
-
-  new Command<{ event: EventV }>(
-    `
-      #### XAI
-
-      * "XAI ...event" - Runs given agl event
-      * E.g. "XAI Deploy"
-    `,
-    'XAI',
-    [new Arg('event', getEventV, { variadic: true })],
-    (world, from, { event }) => {
-      return processXAIEvent(world, event.val, from);
-    },
-    { subExpressions: xaiCommands() }
   ),
 
   new Command<{ event: EventV }>(

@@ -20,8 +20,6 @@ import { Arg, Fetcher, getFetcherValue } from './Command';
 import { getUserValue, userFetchers } from './Value/UserValue';
 import { comptrollerFetchers, getComptrollerValue } from './Value/ComptrollerValue';
 import { comptrollerImplFetchers, getComptrollerImplValue } from './Value/ComptrollerImplValue';
-import { xaicontrollerFetchers, getXAIControllerValue } from './Value/XAIControllerValue';
-import { xaicontrollerImplFetchers, getXAIControllerImplValue } from './Value/XAIControllerImplValue';
 import { getUnitrollerValue, unitrollerFetchers } from './Value/UnitrollerValue';
 import { aTokenFetchers, getATokenValue } from './Value/ATokenValue';
 import { aTokenDelegateFetchers, getATokenDelegateValue } from './Value/ATokenDelegateValue';
@@ -33,7 +31,6 @@ import { getPriceOracleProxyValue, priceOracleProxyFetchers } from './Value/Pric
 import { getTimelockValue, timelockFetchers, getTimelockAddress } from './Value/TimelockValue';
 import { getMaximillionValue, maximillionFetchers } from './Value/MaximillionValue';
 import { getAGLValue, aglFetchers } from './Value/AGLValue';
-import { getXAIValue, xaiFetchers } from './Value/XAIValue';
 import { getGovernorValue, governorFetchers } from './Value/GovernorValue';
 import { getAddress } from './ContractLookup';
 import { getCurrentBlockNumber, getCurrentTimestamp, mustArray, sendRPC } from './Utils';
@@ -847,29 +844,6 @@ const fetchers = [
     async (world, { res }) => res,
     { subExpressions: comptrollerImplFetchers() }
   ),
-
-  new Fetcher<{ res: Value }, Value>(
-    `
-      #### XAIController
-
-      * "XAIController ...xaicontrollerArgs" - Returns xaicontroller value
-    `,
-    'XAIController',
-    [new Arg('res', getXAIControllerValue, { variadic: true })],
-    async (world, { res }) => res,
-    { subExpressions: xaicontrollerFetchers() }
-  ),
-  new Fetcher<{ res: Value }, Value>(
-    `
-      #### XAIControllerImpl
-
-      * "XAIControllerImpl ...xaicontrollerImplArgs" - Returns xaicontroller implementation value
-    `,
-    'XAIControllerImpl',
-    [new Arg('res', getXAIControllerImplValue, { variadic: true })],
-    async (world, { res }) => res,
-    { subExpressions: xaicontrollerImplFetchers() }
-  ),
   new Fetcher<{ res: Value }, Value>(
     `
       #### AToken
@@ -979,17 +953,6 @@ const fetchers = [
     [new Arg('res', getAGLValue, { variadic: true })],
     async (world, { res }) => res,
     { subExpressions: aglFetchers() }
-  ),
-  new Fetcher<{ res: Value }, Value>(
-    `
-      #### XAI
-
-      * "XAI ...agileArgs" - Returns XAI value
-    `,
-    'XAI',
-    [new Arg('res', getXAIValue, { variadic: true })],
-    async (world, { res }) => res,
-    { subExpressions: xaiFetchers() }
   ),
   new Fetcher<{ res: Value }, Value>(
     `

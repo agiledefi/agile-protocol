@@ -22,8 +22,6 @@ interface ComptrollerMethods {
   _setPriceOracle(string): Sendable<number>
   _setCollateralFactor(string, encodedNumber): Sendable<number>
   _setCloseFactor(encodedNumber): Sendable<number>
-  _setXAIMintRate(encodedNumber): Sendable<number>
-  _setXAIController(string): Sendable<number>
   enterMarkets(markets: string[]): Sendable<number>
   exitMarket(market: string): Sendable<number>
   fastForward(encodedNumber): Sendable<number>
@@ -50,7 +48,6 @@ interface ComptrollerMethods {
   claimAgile(string): Sendable<void>
   _setAgileRate(encodedNumber): Sendable<void>
   _setAgileSpeed(aToken: string, encodedNumber): Sendable<void>
-  mintedXAIs(string): Callable<number>
   _setMarketBorrowCaps(aTokens:string[], borrowCaps:encodedNumber[]): Sendable<void>
   _setBorrowCapGuardian(string): Sendable<void>
   borrowCapGuardian(): Callable<string>

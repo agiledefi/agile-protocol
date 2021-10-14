@@ -170,30 +170,6 @@ async function setCloseFactor(world: World, from: string, comptroller: Comptroll
   return world;
 }
 
-async function setXAIMintRate(world: World, from: string, comptroller: Comptroller, xaiMintRate: NumberA): Promise<World> {
-  let invokation = await invoke(world, comptroller.methods._setXAIMintRate(xaiMintRate.encode()), from, ComptrollerErrorReporter);
-
-  world = addAction(
-    world,
-    `Set xai mint rate to ${xaiMintRate.show()}`,
-    invokation
-  );
-
-  return world;
-}
-
-async function setXAIController(world: World, from: string, comptroller: Comptroller, xaicontroller: string): Promise<World> {
-  let invokation = await invoke(world, comptroller.methods._setXAIController(xaicontroller), from, ComptrollerErrorReporter);
-
-  world = addAction(
-    world,
-    `Set XAIController to ${xaicontroller} as ${describeUser(world, from)}`,
-    invokation
-  );
-
-  return world;
-}
-
 async function fastForward(world: World, from: string, comptroller: Comptroller, blocks: NumberA): Promise<World> {
   let invokation = await invoke(world, comptroller.methods.fastForward(blocks.encode()), from, ComptrollerErrorReporter);
 
@@ -517,32 +493,6 @@ export function comptrollerCommands() {
         new Arg("closeFactor", getPercentV)
       ],
       (world, from, {comptroller, closeFactor}) => setCloseFactor(world, from, comptroller, closeFactor)
-    ),
-    new Command<{comptroller: Comptroller, xaiMintRate: NumberA}>(`
-        #### SetXAIMintRate
-
-        * "Comptroller SetXAIMintRate <Number>" - Sets the xai mint rate to given value
-          * E.g. "Comptroller SetXAIMintRate 5e4"
-      `,
-      "SetXAIMintRate",
-      [
-        new Arg("comptroller", getComptroller, {implicit: true}),
-        new Arg("xaiMintRate", getNumberA)
-      ],
-      (world, from, {comptroller, xaiMintRate}) => setXAIMintRate(world, from, comptroller, xaiMintRate)
-    ),
-    new Command<{comptroller: Comptroller, xaicontroller: AddressA}>(`
-        #### SetXAIController
-
-        * "Comptroller SetXAIController xaicontroller:<Address>" - Sets the xai controller address
-          * E.g. "Comptroller SetXAIController 0x..."
-      `,
-      "SetXAIController",
-      [
-        new Arg("comptroller", getComptroller, {implicit: true}),
-        new Arg("xaicontroller", getAddressA)
-      ],
-      (world, from, {comptroller, xaicontroller}) => setXAIController(world, from, comptroller, xaicontroller.val)
     ),
     new Command<{comptroller: Comptroller, newPendingAdmin: AddressA}>(`
         #### SetPendingAdmin

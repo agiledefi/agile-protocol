@@ -19,8 +19,7 @@ contract ComptrollerErrorReporter {
         REJECTION,
         SNAPSHOT_ERROR,
         TOO_MANY_ASSETS,
-        TOO_MUCH_REPAY,
-        INSUFFICIENT_BALANCE_FOR_XAI
+        TOO_MUCH_REPAY
     }
 
     enum FailureInfo {
@@ -44,9 +43,6 @@ contract ComptrollerErrorReporter {
         SUPPORT_MARKET_EXISTS,
         SUPPORT_MARKET_OWNER_CHECK,
         SET_PAUSE_GUARDIAN_OWNER_CHECK,
-        SET_XAI_MINT_RATE_CHECK,
-        SET_XAICONTROLLER_OWNER_CHECK,
-        SET_MINTED_XAI_REJECTION,
         SET_TREASURY_OWNER_CHECK
     }
 
@@ -186,74 +182,8 @@ contract TokenErrorReporter {
         ADD_RESERVES_FRESH_CHECK,
         ADD_RESERVES_TRANSFER_IN_NOT_POSSIBLE,
         TOKEN_GET_UNDERLYING_PRICE_ERROR,
-        REPAY_XAI_COMPTROLLER_REJECTION,
-        REPAY_XAI_FRESHNESS_CHECK,
-        XAI_MINT_EXCHANGE_CALCULATION_FAILED,
         SFT_MINT_NEW_ACCOUNT_BALANCE_CALCULATION_FAILED,
         REDEEM_FEE_CALCULATION_FAILED
-    }
-
-    /**
-      * @dev `error` corresponds to enum Error; `info` corresponds to enum FailureInfo, and `detail` is an arbitrary
-      * contract-specific code that enables us to report opaque error codes from upgradeable contracts.
-      **/
-    event Failure(uint error, uint info, uint detail);
-
-    /**
-      * @dev use this when reporting a known error from the money market or a non-upgradeable collaborator
-      */
-    function fail(Error err, FailureInfo info) internal returns (uint) {
-        emit Failure(uint(err), uint(info), 0);
-
-        return uint(err);
-    }
-
-    /**
-      * @dev use this when reporting an opaque error from an upgradeable collaborator contract
-      */
-    function failOpaque(Error err, FailureInfo info, uint opaqueError) internal returns (uint) {
-        emit Failure(uint(err), uint(info), opaqueError);
-
-        return uint(err);
-    }
-}
-
-contract XAIControllerErrorReporter {
-    enum Error {
-        NO_ERROR,
-        UNAUTHORIZED,
-        REJECTION,
-        SNAPSHOT_ERROR,
-        PRICE_ERROR,
-        MATH_ERROR,
-        INSUFFICIENT_BALANCE_FOR_XAI
-    }
-
-    enum FailureInfo {
-        SET_PENDING_ADMIN_OWNER_CHECK,
-        SET_PENDING_IMPLEMENTATION_OWNER_CHECK,
-        SET_COMPTROLLER_OWNER_CHECK,
-        ACCEPT_ADMIN_PENDING_ADMIN_CHECK,
-        ACCEPT_PENDING_IMPLEMENTATION_ADDRESS_CHECK,
-        XAI_MINT_REJECTION,
-        XAI_BURN_REJECTION,
-        XAI_LIQUIDATE_ACCRUE_BORROW_INTEREST_FAILED,
-        XAI_LIQUIDATE_ACCRUE_COLLATERAL_INTEREST_FAILED,
-        XAI_LIQUIDATE_COLLATERAL_FRESHNESS_CHECK,
-        XAI_LIQUIDATE_COMPTROLLER_REJECTION,
-        XAI_LIQUIDATE_COMPTROLLER_CALCULATE_AMOUNT_SEIZE_FAILED,
-        XAI_LIQUIDATE_CLOSE_AMOUNT_IS_UINT_MAX,
-        XAI_LIQUIDATE_CLOSE_AMOUNT_IS_ZERO,
-        XAI_LIQUIDATE_FRESHNESS_CHECK,
-        XAI_LIQUIDATE_LIQUIDATOR_IS_BORROWER,
-        XAI_LIQUIDATE_REPAY_BORROW_FRESH_FAILED,
-        XAI_LIQUIDATE_SEIZE_BALANCE_INCREMENT_FAILED,
-        XAI_LIQUIDATE_SEIZE_BALANCE_DECREMENT_FAILED,
-        XAI_LIQUIDATE_SEIZE_COMPTROLLER_REJECTION,
-        XAI_LIQUIDATE_SEIZE_LIQUIDATOR_IS_BORROWER,
-        XAI_LIQUIDATE_SEIZE_TOO_MUCH,
-        MINT_FEE_CALCULATION_FAILED,
-        SET_TREASURY_OWNER_CHECK
     }
 
     /**

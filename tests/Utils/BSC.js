@@ -16,10 +16,6 @@ async function bnbBalance(addr) {
   return ethers.utils.bigNumberify(new BigNum(await web3.eth.getBalance(addr)).toFixed());
 }
 
-async function xaiBalance(xai, addr) {
-  return ethers.utils.bigNumberify(new BigNum(await web3.eth.getBalance(addr)).toFixed());
-}
-
 async function bnbGasCost(receipt) {
   const tx = await web3.eth.getTransaction(receipt.transactionHash);
   const gasUsed = new BigNum(receipt.gasUsed);

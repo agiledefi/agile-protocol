@@ -68,20 +68,12 @@ contract ComptrollerInterfaceG1 {
         address aTokenBorrowed,
         address aTokenCollateral,
         uint repayAmount) external view returns (uint, uint);
-    function setMintedXAIOf(address owner, uint amount) external returns (uint);
 }
 
 contract ComptrollerInterfaceG2 is ComptrollerInterfaceG1 {
-    function liquidateXAICalculateSeizeTokens(
-        address aTokenCollateral,
-        uint repayAmount) external view returns (uint, uint);
 }
 
 contract ComptrollerInterface is ComptrollerInterfaceG2 {
-}
-
-interface IXAIVault {
-    function updatePendingRewards() external;
 }
 
 interface IComptroller {
