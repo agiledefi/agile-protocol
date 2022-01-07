@@ -1273,6 +1273,6 @@ contract Comptroller is ComptrollerV4Storage, ComptrollerInterfaceG2, Comptrolle
      * @return The address of AGL
      */
     function getAGLAddress() public view returns (address) {
-        return 0x98936Bde1CF1BFf1e7a8012Cee5e2583851f2067;
+        return 0xA4434AFEae0dECb9820D906BF01b13291D00651a;
     }
 }

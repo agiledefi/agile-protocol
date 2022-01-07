@@ -123,7 +123,7 @@ contract AGL is Ownable {
     uint public constant totalSupply = 1000000000e18; // 1 billion AGL
 
     /// @notice Reward eligible epochs
-    uint32 public constant eligibleEpochs = 30; // 30 epochs
+    uint32 public constant eligibleEpochs = 60; // 60 epochs
 
     /// @notice Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
@@ -205,7 +205,7 @@ contract AGL is Ownable {
     constructor(address account) public {
         EpochConfig memory newEpochConfig = EpochConfig(
             0,
-            24 * 60 * 60 / 3, // 1 day blocks in BSC
+            24 * 60 * 60 / 6, // 1 day blocks in BSC
             20 // 0.2% ROI increase per epoch
         );
         epochConfigs.push(newEpochConfig);
