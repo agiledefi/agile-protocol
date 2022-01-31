@@ -38,8 +38,12 @@ contract AgilePriceOracle is PriceOracle {
 
     function getUnderlyingPrice(AToken aToken) public view returns (uint) {
         if (compareStrings(aToken.symbol(), "aCRO")) {
-            IStdReference.ReferenceData memory data = ref.getReferenceData("CRO", "USD");
-            return data.rate;
+            if(prices[address(aToken)] != 0) {
+                return prices[address(aToken)];
+            } else {
+                IStdReference.ReferenceData memory data = ref.getReferenceData("CRO", "USD");
+                return data.rate;
+            }
         }else if (compareStrings(aToken.symbol(), "AGL")) {
             return prices[address(aToken)];
         } else if (compareStrings(aToken.symbol(), "aTCRO")) {
@@ -70,7 +74,7 @@ contract AgilePriceOracle is PriceOracle {
 
     function setUnderlyingPrice(AToken aToken, uint underlyingPriceMantissa) public {
         require(msg.sender == admin, "only admin can set underlying price");
-        if (!compareStrings(aToken.symbol(), "aTCRO")) {
+        if (!compareStrings(aToken.symbol(), "aTCRO") && !compareStrings(aToken.symbol(), "aCRO")) {
             address asset = address(ABep20(address(aToken)).underlying());
             emit PricePosted(asset, prices[asset], underlyingPriceMantissa, underlyingPriceMantissa);
             prices[asset] = underlyingPriceMantissa;
